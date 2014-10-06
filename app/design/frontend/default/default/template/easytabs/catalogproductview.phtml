@@ -1,0 +1,313 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     base_default
+ * @copyright   Copyright (c) 2009 Irubin Consulting Inc. DBA Varien (http://www.varien.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+
+/**
+ * Product view template
+ *
+ * @see Mage_Catalog_Block_Product_View
+ * @see Mage_Review_Block_Product_View
+ */
+?>
+<?php
+    $_helper = $this->helper('catalog/output');
+    $_product = $this->getProduct();
+?>
+<div>
+<?php
+  //verificar atributos de produto
+    var_dump($_product);
+?>
+
+</div>
+<script type="text/javascript">
+    var optionsPrice = new Product.OptionsPrice(<?php echo $this->getJsonConfig() ?>);
+</script>
+<div id="messages_product_view"><?php echo $this->getMessagesBlock()->getGroupedHtml() ?></div>
+<div class="product-view">
+    <div class="product-essential">
+    <form action="<?php echo $this->getAddToCartUrl($_product) ?>" method="post" id="product_addtocart_form"<?php if($_product->getOptions()): ?> enctype="multipart/form-data"<?php endif; ?>>
+        <div class="no-display">
+            <input type="hidden" name="product" value="<?php echo $_product->getId() ?>" />
+            <input type="hidden" name="related_product" id="related-products-field" value="" />
+        </div>
+
+        <div class="product-shop">
+           <div class="view-name-pric"> 
+                   <div class="product-name">
+                        <h1><?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?></h1>
+<?php 
+$storeId = Mage::app()->getStore()->getId();
+$splash=Mage::getModel('attributeSplash/page')->setStoreId($storeId)->loadByOptionId($_product->getManufacturer());
+$splash->getUrlKey();
+?>
+                         <?php 
+							$manufacturer = Mage::getModel('catalog/product')
+                                    ->load($_product->getId())
+                                    ->getAttributeText('manufacturer');?>
+                <?php if(!empty($manufacturer)):?>
+                 <span class="cart-brnd"><?php echo $this->__('By ');?><a href="<?php echo $this->getUrl().$splash->getUrlKey();?>"><?php echo $manufacturer;?></a></span>
+                 <?php endif;?>
+                    </div>
+                    <div class="pro-view-price"><?php  echo $this->getChildHtml('product_type_data') ?></div>
+            </div>
+           <div class="main-attribute">
+          <?php /*?> <?php if($_product->getMaterial()){?><div class="attribute"><label><?php echo $this->__('Material:  '); ?></label><span><?php echo $_product->getMaterial() ?> </span></div><?php ;}?>
+               <?php if($_product->getMedidas()){?><div class="attribute"> <label><?php echo $this->__('Medidas:  '); ?></label><span><?php echo $_product->getMedidas()?></span> </div> <?php ;} ?><?php */?>
+
+<?php echo $this->getChildHtml('additional1') ?>
+</div>
+
+             <?php /*?> 
+            <?php if ($this->canEmailToFriend()): ?>
+                <p class="email-friend"><a href="<?php echo $this->helper('catalog/product')->getEmailToFriendUrl($_product) ?>"><?php echo $this->__('Email to a Friend') ?></a></p>
+            <?php endif; ?>
+          
+
+            <?php echo $this->getReviewsSummaryHtml($_product, false, true)?>
+            <?php */?>
+            <?php echo $this->getChildHtml('alert_urls') ?>
+           
+            
+
+            <?php if (!$this->hasOptions()):?>
+                <div class="add-to-box">
+                    <?php if($_product->isSaleable()): ?>
+                        <?php echo $this->getChildHtml('addtocart') ?>
+                    <?php endif; ?>
+                    <?php //echo $this->getChildHtml('addto') ?>
+                </div>
+            <?php else:?>
+                <?php //echo $this->getChildHtml('addto') ?>
+            <?php endif; ?>
+     
+           <?php /*?> <?php if ($_product->getShortDescription()):?>
+                <div class="short-description">
+                    <h2><?php echo $this->__('Quick Overview') ?></h2>
+                    <div class="std"><?php echo $_helper->productAttribute($_product, nl2br($_product->getShortDescription()), 'short_description') ?></div>
+                </div>
+            <?php endif;?><?php */?>
+            <?php echo $this->getChildHtml('other');?>
+
+            <?php if ($_product->isSaleable() && $this->hasOptions()):?>
+                  <?php //echo $this->getTierPriceHtml() ?>
+                <?php echo $this->getChildChildHtml('container2', '', true, true) ?>
+            <?php endif;?>
+
+<div class="parcela_view" style="margin:-70px 0px 25px 0px">
+<?php
+function getNumParcelas($total, $maxParcelas, $valor_minimo)
+    {
+        $nParcelas = $maxParcelas;
+
+  //verifica o valor mínimo permitido para cada parcela
+  if (!empty($valor_minimo) && is_numeric($valor_minimo)) {
+   $parcPossiveis = floor($total / $valor_minimo);
+
+   if ($parcPossiveis < $nParcelas) {
+    $nParcelas = $parcPossiveis;
+   }
+  }
+
+  return $nParcelas;
+    }
+function getValorParcela($total, $parcela, $taxa) {
+  if(!is_numeric($total) || $total <= 0){
+   return(false);
+  }
+  if((int)$parcela != $parcela){
+   return(false);
+  }
+  if(!is_numeric($taxa) || $taxa < 0){
+   return(false);
+  }
+  $taxa = $taxa / 100;
+
+  $denominador = 0;
+  if($parcela > 1){
+   for($i=1; $i<=$parcela; $i++){
+    $denominador += 1/pow(1+$taxa,$i);
+   }
+  }else{
+   $denominador = 1;
+  }
+  //return(round($total/$denominador));
+  return($total/$denominador);
+ }
+
+$_product = $this->getProduct();
+    // máximo de parcelas
+ $maxParcelas = 6;
+ // valor minimo de cada parcela
+ $valorMinimo = 50;
+ $taxa = 0;
+
+    $capital = $_product->getFinalPrice();
+    $numParcelas = getNumParcelas($capital, $maxParcelas, $valorMinimo);
+?>
+
+<style type="text/css">
+<!--
+.style1 {
+    color: #FFFFFF;
+    font-weight: bold;
+}
+-->
+</style>
+<?php if($numParcelas  > 1){ ?>
+<span style="font-size: 14px; color: black;display: block;">Parcele em até <?php echo $numParcelas; ?>x sem juros</span>
+
+  <?php
+    
+	
+		echo '<ul style="color: grey;font-size: 14px; float: left;margin-right: 30px;">';
+		 for($i=0; $i < $numParcelas; $i++){
+		  		$valorParcela = getValorParcela($capital, $i+1, $taxa);
+				if($i % 2 == 0){
+					echo('<li >'.($i+1).'x de R$ '.number_format($valorParcela,2,',','.').'&nbsp;&nbsp;</li>');
+				}
+				
+		 }
+	  echo '</ul>';
+	  
+	  echo '<ul style="color: grey;font-size: 14px; ">';
+		 for($i=0; $i < $numParcelas; $i++){
+			$valorParcela = getValorParcela($capital, $i+1, $taxa);
+			if($i % 2 != 0){
+				echo('<li>'.($i+1).'x de R$ '.number_format($valorParcela,2,',','.').'&nbsp;&nbsp;</li>');
+			}
+		 }	
+	  echo '</ul>';
+	
+  
+   
+  
+ 
+  ?>
+
+<?php } ?>
+<p></p>
+</div>            
+            
+            <?php $_wishlistSubmitUrl = $this->helper('wishlist')->getAddUrl($_product); ?>
+
+
+            
+<div class="clear cl-socio"></div>
+<div class="social-icon">
+	  
+        <div class="regist-wish">
+            <ul class="add-to-links">
+					<?php if ($this->helper('wishlist')->isAllow()) : ?>
+                    <li><a href="<?php echo $_wishlistSubmitUrl ?>" onclick="productAddToCartForm.submitLight(this, this.href); return false;" class="link-wishlist"><?php echo $this->__('Para lista de desejos') ?></a></li>
+                    <?php endif; ?>
+            </ul>
+<?php if($_product->getDeadline()):?>
+          <div class="deadline"><span><?php echo $this->__('Prazo de fabricação');?>:</span> <small> <?php echo $_product->getDeadline();?> <?php echo $this->__('dia(s) úteis ');?></small></div>
+<?php endif;?>
+          <?php //echo $this->getLayout()->createBlock('cms/block')->setBlockId('registration-deadline')->toHtml() ?>
+        </div>
+        
+        <div class="ss-links"><span class="sharlinks"><?php echo $this->__('SHARE THIS:'); ?></span><?php echo $this->getLayout()->createBlock('cms/block')->setBlockId('social-network')->toHtml() ?> </div>
+    
+         </div>
+		 
+		 <!---Include associated_lamp.pht -->
+		 <div>
+		 <?php 
+		 $_layout  = Mage::getSingleton('core/layout');
+		$_block = $_layout->createBlock('catalog/product_list_related')->setTemplate('associated_lamp/associated_lamp.phtml');
+		echo $_block->toHtml();
+		 ?>
+		 
+		 </div>
+		 
+        </div>
+		
+         
+        <div class="product-img-box">
+            <?php echo $this->getChildHtml('media') ?>
+        </div>
+
+        <div class="clearer"></div>
+        <?php if ($_product->isSaleable() && $this->hasOptions()):?>
+            <?php //echo $this->getChildChildHtml('container2', '', true, true) ?>
+        <?php endif;?>
+    </form>
+    <script type="text/javascript">
+    //<![CDATA[
+            var productAddToCartForm = new VarienForm('product_addtocart_form');
+            productAddToCartForm.submit = function(){
+                    if (this.validator.validate()) {
+                            this.form.submit();
+                    }
+            }.bind(productAddToCartForm);
+    //]]>
+    </script>
+    </div>
+	
+	<div id="brainsins_div">
+	</div>
+	
+    <div class="product-collateral">
+        <?php if (!Mage::getStoreConfig('easy_tabs/general/descriptiontabbed')):?>
+	        <?php echo $this->getChildHtml('description') ?>
+        <?php endif;?>
+        <?php echo $this->getChildHtml('additional') ?>
+        <?php echo $this->getChildHtml('upsell_products') ?>
+        <?php echo $this->getChildHtml('product_additional_data') ?>
+    </div>
+</div>
+<?php /* Remove HTML tags from attribute dropdown */?>
+<script type="text/javascript">
+        //alert("Hi");
+	jQuery(".product-shop #product-options-wrapper").find("select").each(function(){
+		jQuery(this).find("option").each(function(){
+                        console.log(jQuery(this).html());
+			var cur = <?php echo Mage::app()->getLocale()->currency(Mage::app()->getStore()->getCurrentCurrencyCode())->getSymbol(); ?> + " ";
+			
+			var regex = /(&lt;([^>]+)&gt;)/ig;
+			var txt = jQuery(this).html();
+			jQuery(this).text(txt.replace(regex, cur));
+
+ 
+		});			
+	});
+
+
+
+jQuery("#product-options-wrapper").find("select").change(function(){
+		jQuery(this).find("option").each(function(){
+			var cur = <?php echo Mage::app()->getLocale()->currency(Mage::app()->getStore()->getCurrentCurrencyCode())->getSymbol(); ?> + " ";
+			
+			var regex = /(&lt;([^>]+)&gt;)/ig;
+			var txt = jQuery(this).html();
+			jQuery(this).text(txt.replace(regex, cur));
+
+ 
+		});			
+	});
+
+</script>
